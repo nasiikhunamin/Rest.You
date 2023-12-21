@@ -1,43 +1,33 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:yourest/model/local_restaurant.dart';
+import 'package:go_router/go_router.dart';
+import 'package:yourest/model/restaurant_list_.dart';
+import 'package:yourest/services/restaurant_services.dart';
 import 'package:yourest/widget/button_banner.dart';
 import 'package:yourest/widget/custom_card.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
-    super.key,
-  });
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  late Future<RestaurantList> _restaurantList;
+
   @override
   void initState() {
     super.initState();
     initialization();
+    _restaurantList = RestaurantServices().getRestaurantList();
   }
 
   ///Menghapus flutter native screen
   void initialization() async {
     FlutterNativeSplash.remove();
-  }
-
-  Future<String> _loadLocalData() async {
-    return await DefaultAssetBundle.of(context)
-        .loadString('assets/local_restaurant.json');
-  }
-
-  Future<List<Restaurant>> _fetchRestaurants() async {
-    String jsonData = await _loadLocalData();
-    List<dynamic> data = json.decode(jsonData)['restaurants'];
-    List<Restaurant> restaurants =
-        data.map((json) => Restaurant.fromJson(json)).toList();
-    return restaurants;
   }
 
   @override
@@ -48,12 +38,12 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              height: MediaQuery.sizeOf(context).height * 1 / 2 / 1.7,
+              height: MediaQuery.of(context).size.height * 1 / 2 / 1.7,
               child: Stack(
                 children: [
                   Container(
                     height: 200,
-                    width: MediaQuery.sizeOf(context).width,
+                    width: MediaQuery.of(context).size.width,
                     color: const Color(0xff477680),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -84,8 +74,10 @@ class _HomePageState extends State<HomePage> {
                               ),
                               GestureDetector(
                                 onTap: () {},
-                                child: const Icon(Icons.notifications,
-                                    color: Colors.white),
+                                child: const Icon(
+                                  Icons.notifications,
+                                  color: Colors.white,
+                                ),
                               )
                             ],
                           ),
@@ -108,33 +100,35 @@ class _HomePageState extends State<HomePage> {
                     top: 170,
                     left: 50,
                     right: 50,
-                    child: Container(
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 3,
-                            offset: const Offset(0, 1),
-                          )
-                        ],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          fillColor: Colors.white,
-                          filled: true,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
+                    child: GestureDetector(
+                      onTap: () => context.go('/search'),
+                      child: Container(
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              spreadRadius: 3,
+                              offset: const Offset(0, 1),
+                            )
+                          ],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Icon(Icons.search, color: Colors.grey[400]),
+                              const SizedBox(
+                                width: 12,
+                              ),
+                              Text(
+                                'Search...',
+                                style: TextStyle(color: Colors.grey[400]),
+                              ),
+                            ],
                           ),
-                          hintText: 'Search...',
-                          hintStyle: TextStyle(
-                            color: Colors.grey[300],
-                          ),
-                          prefixIcon: const Icon(Icons.search),
-                          prefixIconColor: Colors.grey[300],
                         ),
                       ),
                     ),
@@ -156,23 +150,33 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-            FutureBuilder<List<Restaurant>>(
-              future: _fetchRestaurants(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+            FutureBuilder<RestaurantList>(
+              future: _restaurantList,
+              builder: (context, AsyncSnapshot<RestaurantList> snapshot) {
+                var state = snapshot.connectionState;
+                if (state != ConnectionState.done) {
+                  return const Center();
                 } else {
-                  List<Restaurant> restaurants = snapshot.data!;
-                  return Flexible(
-                    child: ListView.builder(
-                      itemCount: restaurants.length,
-                      itemBuilder: (context, index) {
-                        return CustomCard(restaurant: restaurants[index]);
-                      },
-                    ),
-                  );
+                  if (snapshot.hasData) {
+                    return Expanded(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: snapshot.data?.restaurants.length,
+                        itemBuilder: (context, index) {
+                          var restaurant = snapshot.data?.restaurants[index];
+                          return CustomCard(restaurant: restaurant!);
+                        },
+                      ),
+                    );
+                  } else if (snapshot.hasError) {
+                    return const Center(
+                      child: Material(
+                        child: Text('Error: Data not found'),
+                      ),
+                    );
+                  } else {
+                    return const Material(child: Text(''));
+                  }
                 }
               },
             ),
