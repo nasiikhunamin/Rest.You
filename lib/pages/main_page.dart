@@ -19,6 +19,7 @@ class _MainPageState extends State<MainPage> {
 
   ///Default selected index bottom navigationbar
   int _currentIndex = 0;
+
   void onTap(int index) {
     setState(() {});
     _currentIndex = index;

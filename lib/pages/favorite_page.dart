@@ -5,9 +5,28 @@ class FavoritePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xff477680),
+        centerTitle: true,
+        title: const Text(
+          'Favorite',
+          style: TextStyle(
+            color: Colors.white,
+          ),
+        ),
+      ),
       body: Center(
-        child: Text("Tidak Ada Data"),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset('assets/favorite404.png', height: 300),
+            const Text(
+              'No favorites added',
+              style: TextStyle(fontSize: 16),
+            )
+          ],
+        ),
       ),
     );
   }

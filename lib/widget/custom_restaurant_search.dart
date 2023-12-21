@@ -2,12 +2,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:go_router/go_router.dart';
-import 'package:yourest/model/restaurant_list_.dart';
+import 'package:yourest/model/restaurant_search.dart';
 import 'package:yourest/utils/constant.dart';
 
-class CustomCard extends StatelessWidget {
+class CustomCardRestaurant extends StatelessWidget {
   final Restaurant restaurant;
-  const CustomCard({
+  const CustomCardRestaurant({
     required this.restaurant,
     super.key,
   });
@@ -18,9 +18,12 @@ class CustomCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
       child: GestureDetector(
         onTap: () {
-          context.pushNamed('/detailPage', pathParameters: {
-            "id": restaurant.id,
-          });
+          context.pushNamed(
+            '/detailPage',
+            pathParameters: {
+              "id": restaurant.id,
+            },
+          );
         },
         child: Container(
           height: 200,
