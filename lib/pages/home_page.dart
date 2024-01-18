@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:go_router/go_router.dart';
-import 'package:yourest/model/restaurant_list_.dart';
-import 'package:yourest/services/restaurant_services.dart';
-import 'package:yourest/widget/button_banner.dart';
+import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
+import 'package:yourest/common/style.dart';
+import 'package:yourest/pages/search_page.dart';
+import 'package:yourest/provider/restaurants_provider.dart';
+import 'package:yourest/utils/result_state.dart';
 import 'package:yourest/widget/custom_card.dart';
 
 class HomePage extends StatefulWidget {
+  static const routeName = "restaurant_home";
   const HomePage({
     Key? key,
   }) : super(key: key);
@@ -15,17 +18,13 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  late Future<RestaurantList> _restaurantList;
-
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
     initialization();
-    _restaurantList = RestaurantServices().getRestaurantList();
   }
 
-  ///Menghapus flutter native screen
   void initialization() async {
     FlutterNativeSplash.remove();
   }
@@ -44,7 +43,7 @@ class _HomePageState extends State<HomePage> {
                   Container(
                     height: 200,
                     width: MediaQuery.of(context).size.width,
-                    color: const Color(0xff477680),
+                    color: primaryColor,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                           vertical: 25, horizontal: 15),
@@ -55,20 +54,22 @@ class _HomePageState extends State<HomePage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Column(
+                              Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  CircleAvatar(),
-                                  SizedBox(
+                                  const CircleAvatar(
+                                    backgroundImage:
+                                        AssetImage("assets/logo_splash.png"),
+                                  ),
+                                  const SizedBox(
                                     height: 8,
                                   ),
                                   Text(
-                                    "Welcome, Nasikhun",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w400,
-                                      color: Colors.white,
-                                    ),
+                                    "Welcome, Rest",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.merge(textWhite),
                                   ),
                                 ],
                               ),
@@ -84,13 +85,12 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(
                             height: 10,
                           ),
-                          const Text(
+                          Text(
                             "Find best restaurant around you.",
-                            style: TextStyle(
-                              fontSize: 23,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.merge(textWhite),
                           )
                         ],
                       ),
@@ -101,7 +101,8 @@ class _HomePageState extends State<HomePage> {
                     left: 50,
                     right: 50,
                     child: GestureDetector(
-                      onTap: () => context.go('/search'),
+                      onTap: () => Navigator.pushNamed(
+                          context, RestaurantSearchPage.routeName),
                       child: Container(
                         height: 60,
                         decoration: BoxDecoration(
@@ -124,7 +125,7 @@ class _HomePageState extends State<HomePage> {
                                 width: 12,
                               ),
                               Text(
-                                'Search...',
+                                "Search...",
                                 style: TextStyle(color: Colors.grey[400]),
                               ),
                             ],
@@ -136,47 +137,47 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 25, horizontal: 15),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ButtonBanner(
-                    title: "Populer",
-                  ),
-                  ButtonBanner(
-                    title: "Bintang 4.0+",
-                  ),
-                ],
+            SizedBox(
+              height: 120,
+              child: OverflowBox(
+                minHeight: 200,
+                maxHeight: 200,
+                child: Lottie.asset(
+                  "assets/welcome_animation.json",
+                ),
               ),
             ),
-            FutureBuilder<RestaurantList>(
-              future: _restaurantList,
-              builder: (context, AsyncSnapshot<RestaurantList> snapshot) {
-                var state = snapshot.connectionState;
-                if (state != ConnectionState.done) {
-                  return const Center();
+            Consumer<RestaurantProvider>(
+              builder: (context, value, child) {
+                if (value.stateList == ResultState.loading) {
+                  return const Center(
+                    child: Text(''),
+                  );
+                } else if (value.stateList == ResultState.hasData) {
+                  return Expanded(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: value.result.restaurants.length,
+                      itemBuilder: (context, index) {
+                        var restaurant = value.result.restaurants[index];
+                        return CustomCard(
+                          restaurant: restaurant,
+                        );
+                      },
+                    ),
+                  );
+                } else if (value.stateList == ResultState.noData) {
+                  return Center(
+                    child: Text(value.message),
+                  );
+                } else if (value.stateList == ResultState.error) {
+                  return Center(
+                    child: Text(value.message.toString()),
+                  );
                 } else {
-                  if (snapshot.hasData) {
-                    return Expanded(
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: snapshot.data?.restaurants.length,
-                        itemBuilder: (context, index) {
-                          var restaurant = snapshot.data?.restaurants[index];
-                          return CustomCard(restaurant: restaurant!);
-                        },
-                      ),
-                    );
-                  } else if (snapshot.hasError) {
-                    return const Center(
-                      child: Material(
-                        child: Text('Error: Data not found'),
-                      ),
-                    );
-                  } else {
-                    return const Material(child: Text(''));
-                  }
+                  return const Center(
+                    child: Text(""),
+                  );
                 }
               },
             ),

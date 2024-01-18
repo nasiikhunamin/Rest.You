@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:yourest/common/style.dart';
 import 'package:yourest/pages/favorite_page.dart';
 import 'package:yourest/pages/home_page.dart';
-import 'package:yourest/pages/profile_page.dart';
+import 'package:yourest/pages/settings_page.dart';
 
 class MainPage extends StatefulWidget {
+  static const routeName = "main_page";
   const MainPage({super.key});
 
   @override
@@ -37,7 +39,7 @@ class _MainPageState extends State<MainPage> {
         child: BottomNavigationBar(
           onTap: onTap,
           currentIndex: _currentIndex,
-          backgroundColor: const Color(0xff477680),
+          backgroundColor: primaryColor,
           selectedItemColor: const Color(0xffefefef),
           unselectedItemColor: const Color(0xffa6a6a6),
           elevation: 0,
@@ -46,15 +48,15 @@ class _MainPageState extends State<MainPage> {
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined),
-              label: 'Home',
+              label: "Home",
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.favorite_outline_outlined),
-              label: 'Favorite',
+              label: "Favorite",
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
-              label: 'Profile',
+              label: "Settings",
             )
           ],
         ),

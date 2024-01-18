@@ -3,584 +3,423 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:readmore/readmore.dart';
-import 'package:yourest/model/restaurant_detail.dart';
-import 'package:yourest/provider/detail_restaurant_provider.dart';
-import 'package:yourest/utils/constant.dart';
+import 'package:yourest/common/style.dart';
+import 'package:yourest/data/api/api_services.dart';
+import 'package:yourest/data/model/restaurant.dart';
+import 'package:yourest/provider/db_provider.dart';
+import 'package:yourest/provider/restaurants_provider.dart';
+import 'package:yourest/common/constant.dart';
+import 'package:yourest/utils/result_state.dart';
 
 class DetailPage extends StatefulWidget {
-  final String id;
+  static const routeName = "/restaurant_detail";
+  final Restaurant restaurant;
 
-  const DetailPage({Key? key, required this.id}) : super(key: key);
+  const DetailPage({
+    Key? key,
+    required this.restaurant,
+  }) : super(key: key);
 
   @override
   State<DetailPage> createState() => _DetailPageState();
 }
 
 class _DetailPageState extends State<DetailPage> {
-  ///Selected index Button Menu
-  bool _isSelectedButton = true;
+  bool isAddReview = false;
+  final _formNameKey = GlobalKey<FormState>();
+  final _formReviewKey = GlobalKey<FormState>();
 
-  ///Get menu restaurant foods
-  List<Category> getFoods(Restaurant restaurant) {
-    return restaurant.menus.foods;
-  }
-
-  ///Get menu restaurant drinks
-  List<Category> getDrinks(Restaurant restaurant) {
-    return restaurant.menus.drinks;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            Consumer<RestaurantDetailProvider>(
-              builder: (context, state, _) {
-                if (state.state == ResultState.loading) {
-                  return const SliverToBoxAdapter(
-                    child: Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
-                } else if (state.state == ResultState.hasData) {
-                  return SliverAppBar(
-                    pinned: true,
-                    floating: true,
-                    backgroundColor: const Color(0xff477680),
-                    expandedHeight: 200.0,
-                    flexibleSpace: FlexibleSpaceBar(
-                      background: Hero(
-                        tag: state.result.restaurant.pictureId,
-                        child: CachedNetworkImage(
-                          imageUrl: imgUrl + state.result.restaurant.pictureId,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  );
-                } else {
-                  return const SliverToBoxAdapter(
-                    child: Text(''),
-                  );
-                }
-              },
-            ),
-          ];
-        },
-        body: Consumer<RestaurantDetailProvider>(
-          builder: (context, state, _) {
-            if (state.state == ResultState.loading) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            } else if (state.state == ResultState.hasData) {
-              var restaurant = state.result.restaurant;
-              return Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        restaurant.name,
-                        style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xff477680)),
-                      ),
-                      const SizedBox(height: 15),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.location_on,
-                                color: Colors.redAccent,
-                              ),
-                              Text(
-                                restaurant.city,
-                                style: TextStyle(
-                                    fontSize: 15, color: Colors.grey[600]),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              RatingBarIndicator(
-                                unratedColor: const Color(0xffA9A9A9),
-                                rating: restaurant.rating,
-                                itemBuilder: (context, index) => const Icon(
-                                  Icons.star,
-                                  color: Color(0xffffc207),
-                                ),
-                                itemCount: 5,
-                                itemSize: 20,
-                                direction: Axis.horizontal,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                restaurant.rating.toString(),
-                                style: TextStyle(
-                                  color: Colors.grey.shade500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        "Description:",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      ReadMoreText(
-                        restaurant.description,
-                        trimLines: 4,
-                        colorClickableText: Colors.pink,
-                        trimMode: TrimMode.Line,
-                        trimCollapsedText: 'Show more',
-                        trimExpandedText: 'Show less',
-                        lessStyle: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        moreStyle: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.justify,
-                      ),
-                      const SizedBox(height: 30),
-                      Center(
-                        child: Text(
-                          "Menu",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 15, horizontal: 10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xfff5f3ff),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            Material(
-                              color: _isSelectedButton
-                                  ? const Color(0xff477680)
-                                  : const Color(0xff477680).withOpacity(0.4),
-                              borderRadius: BorderRadius.circular(10),
-                              child: InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    _isSelectedButton = true;
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 15,
-                                    horizontal: 35,
-                                  ),
-                                  child: const Text(
-                                    "Foods",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Material(
-                              color: _isSelectedButton
-                                  ? const Color(0xff477680).withOpacity(0.4)
-                                  : const Color(0xff477680),
-                              borderRadius: BorderRadius.circular(10),
-                              child: InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    _isSelectedButton = false;
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 15,
-                                    horizontal: 35,
-                                  ),
-                                  child: const Text(
-                                    "Drinks",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                              ),
-                            )
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (_isSelectedButton) ...[
-                              for (var food in getFoods(restaurant))
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: ListTile(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      side: BorderSide(
-                                        color: const Color(0xff477680)
-                                            .withOpacity(0.4),
-                                      ),
-                                    ),
-                                    visualDensity:
-                                        VisualDensity.adaptivePlatformDensity,
-                                    title: Text(
-                                      food.name,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    style: ListTileStyle.list,
-                                  ),
-                                ),
-                            ] else ...[
-                              for (var drink in getDrinks(restaurant))
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: ListTile(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      side: BorderSide(
-                                        color: const Color(0xff477680)
-                                            .withOpacity(0.4),
-                                      ),
-                                    ),
-                                    title: Text(
-                                      drink.name,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    style: ListTileStyle.list,
-                                    visualDensity:
-                                        VisualDensity.adaptivePlatformDensity,
-                                  ),
-                                ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            } else {
-              return const Center(
-                child: Text('Error: Data not found'),
-              );
-            }
-          },
-        ),
-      ),
-    );
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-class DetailPage extends StatefulWidget {
-  final String id;
-  const DetailPage({super.key, required this.id});
-
-  @override
-  State<DetailPage> createState() => _DetailPageState();
-}
-
-///Defaul selected button
-bool _isSelectedButton = true;
-
-class _DetailPageState extends State<DetailPage> {
-  // Future<Welcome> fetchData() async {
-  //   String jsonString = await DefaultAssetBundle.of(context)
-  //       .loadString('assets/local_restaurant.json');
-  //   return welcomeFromJson(jsonString);
-  // }
-
-  List<Category> getFoods(Restaurant restaurant) {
-    return restaurant.menus.foods;
-  }
-
-  List<Category> getDrinks(Restaurant restaurant) {
-    return restaurant.menus.drinks;
-  }
+  int currentId = 0;
+  final TextEditingController controllerName = TextEditingController();
+  final TextEditingController controllerReview = TextEditingController();
+  late RestaurantProvider _restaurantProvider;
 
   @override
   void initState() {
-    // TODO: implement initState
+    _restaurantProvider =
+        Provider.of<RestaurantProvider>(context, listen: false);
+    Future.delayed(Duration.zero, () {
+      _restaurantProvider.fetchDetailRestaurant(widget.restaurant.id);
+    });
     super.initState();
   }
 
   @override
+  void dispose() {
+    controllerName.dispose();
+    controllerReview.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body:
-          NestedScrollView(headerSliverBuilder: (context, innerBoxIsScrolled) {
-        return [
-          Consumer<RestaurantDetailProvider>(builder: (context, state, _) {
-            if (state.state == ResultState.loading) {
-              return Center(
-                child: CircularProgressIndicator(),
-              );
-            } else if (state.state == ResultState.hasData) {
-              return SliverAppBar(
-                pinned: true,
-                floating: true,
-                backgroundColor: const Color(0xff477680),
-                expandedHeight: 200.0,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Hero(
-                    tag: state.result.restaurant.pictureId,
-                    child: CachedNetworkImage(
-                      imageUrl: imgUrl + state.result.restaurant.pictureId,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              );
-            }
-          }),
-        ];
-      }, body: Consumer(
+      body: Consumer<RestaurantProvider>(
         builder: (context, state, _) {
-          if (state.state == ResultState.loading) {
-            return Center(
+          if (state.stateDetail == ResultState.loading) {
+            return const Center(
               child: CircularProgressIndicator(),
             );
-          } else if (state.state == ResultState.hasData) {
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
+          } else if (state.stateDetail == ResultState.hasData) {
+            return detailPageScreen(context, state.detail?.restaurant);
+          } else if (state.stateDetail == ResultState.noData) {
+            return Center(
+              child: Material(
+                child: Text(state.message),
+              ),
+            );
+          } else if (state.stateDetail == ResultState.error) {
+            return Center(
+              child: Material(
+                child: Text(state.message),
+              ),
+            );
+          } else {
+            return const Center(
+              child: Text(''),
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  Widget detailPageScreen(BuildContext context, restaurantData) {
+    return NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              pinned: true,
+              floating: true,
+              backgroundColor: primaryColor,
+              expandedHeight: 200.0,
+              flexibleSpace: FlexibleSpaceBar(
+                background: Hero(
+                  tag: widget.restaurant.pictUrl,
+                  child: CachedNetworkImage(
+                    imageUrl: imgUrl + widget.restaurant.pictUrl,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            )
+          ];
+        },
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SingleChildScrollView(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    widget.restaurant.name.toUpperCase(),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.merge(textPrimary),
+                  ),
+                  Consumer<DatabaseProvider>(
+                    builder: (context, value, child) {
+                      return FutureBuilder<bool>(
+                        future: value.isFavorited(widget.restaurant.id),
+                        builder: (context, snapshot) {
+                          var isFavorite = snapshot.data ?? false;
+                          return isFavorite
+                              ? IconButton(
+                                  onPressed: () => value
+                                      .removeFavorited(widget.restaurant.id),
+                                  icon: const Icon(Icons.favorite),
+                                  color: favorite,
+                                )
+                              : IconButton(
+                                  onPressed: () =>
+                                      value.addFavorite(widget.restaurant),
+                                  icon: const Icon(Icons.favorite_outline),
+                                  color: favorite,
+                                );
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 15),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        color: favorite,
+                      ),
+                      Text(
+                        widget.restaurant.city,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleSmall
+                            ?.merge(textGrey),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      RatingBarIndicator(
+                        unratedColor: unratedColor,
+                        rating: widget.restaurant.rating,
+                        itemBuilder: (context, index) => const Icon(
+                          Icons.star,
+                          color: ratingColor,
+                        ),
+                        itemCount: 5,
+                        itemSize: 20,
+                        direction: Axis.horizontal,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        widget.restaurant.rating.toString(),
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleSmall
+                            ?.merge(textGrey),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                "Description:",
+                style: Theme.of(context).textTheme.titleLarge?.merge(textGrey),
+              ),
+              const SizedBox(height: 5),
+              ReadMoreText(
+                widget.restaurant.description,
+                trimLines: 4,
+                trimMode: TrimMode.Line,
+                trimCollapsedText: "Show more",
+                trimExpandedText: "Show less",
+                lessStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+                moreStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.justify,
+              ),
+              const SizedBox(height: 10),
+              buildReviewCard(restaurantData!.customerReviews ?? [], context),
+              const SizedBox(
+                height: 10,
+              ),
+              Visibility(
+                visible: isAddReview,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.restaurant.name,
-                      style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff477680)),
-                    ),
-                    const SizedBox(height: 15),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              color: Colors.redAccent,
-                            ),
-                            Text(
-                              widget.restaurant.city,
-                              style: TextStyle(
-                                  fontSize: 15, color: Colors.grey[600]),
-                            ),
-                          ],
+                    Form(
+                      key: _formNameKey,
+                      child: TextFormField(
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Please enter your Name";
+                          }
+                          return null;
+                        },
+                        controller: controllerName,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          hintText: "Nama",
                         ),
-                        Row(
-                          children: [
-                            RatingBarIndicator(
-                              unratedColor: const Color(0xffA9A9A9),
-                              rating: widget.restaurant.rating,
-                              itemBuilder: (context, index) => const Icon(
-                                Icons.star,
-                                color: Color(0xffffc207),
-                              ),
-                              itemCount: 5,
-                              itemSize: 20,
-                              direction: Axis.horizontal,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              widget.restaurant.rating.toString(),
-                              style: TextStyle(
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      "Description:",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.grey.shade500,
                       ),
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      widget.restaurant.description,
-                      maxLines: 4,
-                      style: TextStyle(
-                        overflow: TextOverflow.ellipsis,
-                        color: Colors.grey.shade500,
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    Form(
+                      key: _formReviewKey,
+                      child: TextFormField(
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Please enter your Review";
+                          }
+                          return null;
+                        },
+                        controller: controllerReview,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          hintText: "Review",
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 15),
                     Center(
-                      child: Text(
-                        "Menu",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 15, horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xfff5f3ff),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Material(
-                            color: _isSelectedButton
-                                ? const Color(0xff477680)
-                                : const Color(0xff477680).withOpacity(0.4),
-                            borderRadius: BorderRadius.circular(10),
-                            child: InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _isSelectedButton = true;
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 15,
-                                  horizontal: 35,
-                                ),
-                                child: const Text(
-                                  "Foods",
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Material(
-                            color: _isSelectedButton
-                                ? const Color(0xff477680).withOpacity(0.4)
-                                : const Color(0xff477680),
-                            borderRadius: BorderRadius.circular(10),
-                            child: InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _isSelectedButton = false;
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 15,
-                                  horizontal: 35,
-                                ),
-                                child: const Text(
-                                  "Drinks",
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (_isSelectedButton) ...[
-                            for (var food in getFoods(widget.restaurant))
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: ListTile(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    side: BorderSide(
-                                      color: const Color(0xff477680)
-                                          .withOpacity(0.4),
-                                    ),
-                                  ),
-                                  visualDensity:
-                                      VisualDensity.adaptivePlatformDensity,
-                                  title: Text(
-                                    food.name,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  style: ListTileStyle.list,
-                                ),
-                              ),
-                          ] else ...[
-                            for (var drink in getDrinks(widget.restaurant))
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: ListTile(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    side: BorderSide(
-                                      color: const Color(0xff477680)
-                                          .withOpacity(0.4),
-                                    ),
-                                  ),
-                                  title: Text(
-                                    drink.name,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  style: ListTileStyle.list,
-                                  visualDensity:
-                                      VisualDensity.adaptivePlatformDensity,
-                                ),
-                              ),
-                          ],
-                        ],
+                      child: TextButton(
+                        onPressed: () async {
+                          if (_formNameKey.currentState!.validate() &&
+                              _formReviewKey.currentState!.validate()) {
+                            await postReview(
+                                review: controllerReview.text,
+                                name: controllerName.text,
+                                restaurantId: widget.restaurant.id,
+                                context: context);
+                          }
+                        },
+                        child: const Text("Post Review"),
                       ),
                     ),
                   ],
                 ),
               ),
-            );
-          }
-        },
-      )),
-    );
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    setState(() {
+                      isAddReview = !isAddReview;
+                    });
+                  },
+                  child: Text(
+                    isAddReview ? "Hide Form" : "Add Review",
+                    style: const TextStyle(
+                      color: Color(0xff477680),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(
+                height: 20,
+              ),
+              Center(
+                child: Text(
+                  "Food",
+                  style:
+                      Theme.of(context).textTheme.titleLarge?.merge(textGrey),
+                ),
+              ),
+              const SizedBox(height: 15),
+              buildMenuItem(restaurantData?.menus?["foods"], context,
+                  const Icon(Icons.fastfood_outlined)),
+              const SizedBox(height: 15),
+              Center(
+                child: Text(
+                  "Drinks",
+                  style:
+                      Theme.of(context).textTheme.titleLarge?.merge(textGrey),
+                ),
+              ),
+              buildMenuItem(restaurantData?.menus?["drinks"], context,
+                  const Icon(Icons.local_drink_outlined)),
+              const SizedBox(
+                height: 15,
+              ),
+            ]),
+          ),
+        ));
   }
 }
- */
+
+Widget buildReviewCard(
+  List<CustomerReview> reviews,
+  BuildContext context,
+) {
+  return SizedBox(
+    height: 160,
+    child: Padding(
+      padding: const EdgeInsets.only(bottom: 20, top: 5),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: reviews.length,
+        itemBuilder: (context, index) {
+          final review = reviews[index];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: reviews.isNotEmpty
+                ? SizedBox(
+                    height: 130,
+                    child: Container(
+                      width: 200,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Card(
+                        color: primaryLightColor,
+                        elevation: 3,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                review.name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                review.review,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(review.date),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                : const Center(
+                    child: Text("No Reviews Here!"),
+                  ),
+          );
+        },
+      ),
+    ),
+  );
+}
+
+Widget buildMenuItem(item, BuildContext context, Widget icons) {
+  return SizedBox(
+    height: 120,
+    child: ListView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: item?.length ?? 0,
+      itemBuilder: (context, index) {
+        final beverage = item?[index];
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: beverage != null
+              ? SizedBox(
+                  width: 100,
+                  child: Card(
+                    color: primaryLightColor,
+                    elevation: 5.0,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          icons,
+                          const SizedBox(height: 10),
+                          Text(
+                            beverage["name"] ?? "",
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              : const Center(
+                  child: Text("No Food/Drinks Here!"),
+                ),
+        );
+      },
+    ),
+  );
+}
