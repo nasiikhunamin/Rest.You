@@ -1,15 +1,18 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:go_router/go_router.dart';
-import 'package:yourest/model/restaurant_list_.dart';
-import 'package:yourest/utils/constant.dart';
+import 'package:provider/provider.dart';
+import 'package:yourest/common/style.dart';
+import 'package:yourest/data/model/restaurant.dart';
+import 'package:yourest/pages/detail_page.dart';
+import 'package:yourest/provider/db_provider.dart';
+import 'package:yourest/common/constant.dart';
 
 class CustomCard extends StatelessWidget {
   final Restaurant restaurant;
   const CustomCard({
-    required this.restaurant,
     super.key,
+    required this.restaurant,
   });
 
   @override
@@ -18,20 +21,22 @@ class CustomCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
       child: GestureDetector(
         onTap: () {
-          context.pushNamed('/detailPage', pathParameters: {
-            "id": restaurant.id,
-          });
+          Navigator.pushNamed(context, DetailPage.routeName,
+              arguments: restaurant);
         },
         child: Container(
-          height: 200,
+          height: 250,
           width: double.infinity,
-          decoration: BoxDecoration(boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.05),
-              spreadRadius: 4,
-              offset: const Offset(0, 3),
-            ),
-          ], borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.05),
+                spreadRadius: 4,
+                offset: const Offset(0, 3),
+              ),
+            ],
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -39,10 +44,10 @@ class CustomCard extends StatelessWidget {
                 height: 130,
                 width: double.infinity,
                 child: Hero(
-                  tag: restaurant.pictureId,
+                  tag: restaurant.pictUrl,
                   transitionOnUserGestures: true,
                   child: CachedNetworkImage(
-                    imageUrl: imgUrl + restaurant.pictureId,
+                    imageUrl: imgUrl + restaurant.pictUrl,
                     placeholder: (context, url) =>
                         const CircularProgressIndicator(),
                     fit: BoxFit.cover,
@@ -54,16 +59,44 @@ class CustomCard extends StatelessWidget {
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  restaurant.name,
-                  style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff477680)),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      restaurant.name,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.merge(textPrimary),
+                    ),
+                    Consumer<DatabaseProvider>(
+                      builder: (context, value, child) {
+                        return FutureBuilder<bool>(
+                          future: value.isFavorited(restaurant.id),
+                          builder: (context, snapshot) {
+                            var isFavorite = snapshot.data ?? false;
+                            return isFavorite
+                                ? IconButton(
+                                    onPressed: () =>
+                                        value.removeFavorited(restaurant.id),
+                                    icon: const Icon(Icons.favorite),
+                                    color: favorite,
+                                  )
+                                : IconButton(
+                                    onPressed: () =>
+                                        value.addFavorite(restaurant),
+                                    icon: const Icon(Icons.favorite_outline),
+                                    color: favorite,
+                                  );
+                          },
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(
-                height: 12,
+                height: 20,
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -73,12 +106,16 @@ class CustomCard extends StatelessWidget {
                     SizedBox(
                       child: Row(
                         children: [
-                          const Icon(Icons.location_on,
-                              color: Colors.redAccent),
+                          const Icon(
+                            Icons.location_on,
+                            color: favorite,
+                          ),
                           Text(
                             restaurant.city,
-                            style: TextStyle(
-                                fontSize: 15, color: Colors.grey[600]),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.merge(textGrey),
                           ),
                         ],
                       ),
@@ -89,7 +126,7 @@ class CustomCard extends StatelessWidget {
                           rating: restaurant.rating,
                           itemBuilder: (context, index) => const Icon(
                             Icons.star,
-                            color: Color(0xffffc207),
+                            color: ratingColor,
                           ),
                           itemCount: 5,
                           itemSize: 20,
@@ -98,9 +135,10 @@ class CustomCard extends StatelessWidget {
                         const SizedBox(width: 10),
                         Text(
                           restaurant.rating.toString(),
-                          style: const TextStyle(
-                            color: Color(0xff3A3E3E),
-                          ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
+                              ?.merge(textGrey),
                         ),
                       ],
                     ),
